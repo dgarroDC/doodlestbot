@@ -1,0 +1,219 @@
+IMPORT "ltb/ltb.ldpl"
+IMPORT "token.ldpl"
+
+DATA:
+
+gamesFile is text
+
+PROCEDURE:
+
+store "games" in gamesFile
+tg bot init with token token
+
+# /adgame command
+sub addGame
+parameters:
+    gameURL is text
+    chatId is number
+local data:
+    response is text
+    i is number
+    j is number
+procedure:
+    if gameURL is equal to "" then
+        return
+    end if
+    get index of "https://www.doodlest.com/play/" from gameURL in i
+    if i is not equal to 0 then
+        in response join "⚠ Invalid Doodlest play URL: " crlf gameURL crlf
+        tg bot send message response to chatId
+        return
+    end if
+    store length of "https://www.doodlest.com/play/" in i
+    store length of gameURL in j
+    in j solve j - i
+    substring gameURL from i length j in response
+    in response join response crlf
+    append response to file gamesFile
+
+    # in response join "💥 New Doodlest game!" crlf gameURL
+    # tg bot send message response to chatId
+end sub
+
+# /games command
+sub displayGames
+parameters:
+    chatId is number
+local data:
+    games is text
+    gamesList is text list
+    game is text
+    endedGames is text list
+    currentGames is text list
+    title is text
+    response is text
+    length is number
+procedure:
+    load file gamesFile in games
+    if errorcode is equal to 1 then
+        store "" in games
+    end if
+    split games by crlf in gamesList
+    store "" in games
+    delete last element of gamesList # File ends in newline, ignore last ""
+    store length of gamesList in length
+    if length is equal to 0 then
+        in response join "😱 No games in progress, create one now:" crlf "https://www.doodlest.com/create/"
+        tg bot send message response to chatId
+        return
+    end if
+
+    # Classify games
+    for each game in gamesList do
+        call galleryTitle with game title
+        if title is not equal to "" then
+            push game to endedGames
+        else
+            push game to currentGames
+        end if
+    repeat
+
+    # Display completed games
+    store length of endedGames in length
+    if length is greater than 0 then
+        store "🖼️ New #CompletedGames:" in response
+        for each game in endedGames do
+            in response join response crlf "https://www.doodlest.com/gallery/" game
+        repeat
+    end if
+
+    # Display games in progress
+    store length of currentGames in length
+    if length is greater than 0 then
+        if response is not equal to "" then
+            in response join response crlf crlf # New line after ended games
+        end if
+        in response join response "✏️ Games in progress:"
+        for each game in currentGames do
+            in response join response crlf "https://www.doodlest.com/play/" game
+            in games join games game crlf
+        repeat
+    end if
+
+    tg bot send message response to chatId
+
+    # Update games file
+    write games to file gamesFile
+end sub
+
+# Returns the gallery's title of the given id (or "" if unfinished)
+sub galleryTitle
+parameters:
+    id is text
+    title is text
+local data:
+    i is number
+    j is number
+procedure:
+    join "https://www.doodlest.com/gallery/" and id in ltb.curl.in.url
+    clear ltb.curl.in.argNames
+    clear ltb.curl.in.argValues
+    call external ltb.curl.request
+    if ltb.curl.out.response is equal to "" then
+        store "" in title
+        return
+    end if
+    get index of "<title>" from ltb.curl.out.response in i
+    in i solve i + 7
+    get index of "</title>" from ltb.curl.out.response in j
+    in j solve j - i
+    substring ltb.curl.out.response from i length j in title
+end sub
+
+# Tests if the messageText uses a command and returns arguments
+sub testCommand
+parameters:
+    messageText is text
+    command is text
+    arguments is text
+    usesCommand is number
+local data:
+    i is number
+    j is number
+procedure:
+    get index of command from messageText in i
+    if i is equal to 0 then
+        store length of messageText in i
+        get index of " " from messageText in j
+        if j is equal to -1 then
+            store "" in arguments
+        else
+            in i solve i - j
+            substring messageText from j length i in arguments
+            trim arguments in arguments
+        end if
+        store 1 in usesCommand
+    else
+        store 0 in usesCommand
+    end if
+end sub
+
+
+# This sub-procedure is called each time a new text message arrives.
+# Captions in animation, audio, document, photo, video or voice are captured too.
+sub ltb.onMessage
+parameters:
+    messageId is number     # id of the sent message
+    chatId is number        # id of the chat where is was sent
+    userData is text map    # user data from sender
+    messageText is text     # content of the message
+local data:
+    i is number
+    arguments is text
+procedure:
+    call testCommand with messageText "/addgame" arguments i
+    if i is equal to 1 then
+        call addGame with arguments chatId
+        return
+    end if
+    call testCommand with messageText "/games" arguments i
+    if i is equal to 1 then
+        call displayGames with chatId
+        return
+    end if
+end sub
+
+
+
+
+# This sub-procedure is called each time a user joins a chat.
+sub ltb.onJoin
+parameters:
+    messageId is number     # id of the sent message announcing the user join
+    chatId is number        # id of the chat the user joined
+    userData is text map    # user data from the user who joined the chat
+procedure:
+    # I don't use this sub-procedure :)
+end sub
+
+# This sub-procedure is called each time a user leaves a chat.
+sub ltb.onDeparture
+parameters:
+    messageId is number     # id of the sent message announcing the user departure
+    chatId is number        # id of the chat the user left
+    userData is text map    # user data from the user who left the chat
+procedure:
+    # I don't use this sub-procedure :)
+end sub
+
+# This sub-procedure is called each time a user press a button with callback data.
+sub ltb.onCallbackQuery
+parameters:
+    chatId is number        # id of the chat from the message of the button that was pressed
+    userData is text map    # user data from the user who pressed the button
+    callbackData is text    # callback data from the pressed button
+    answerText is text      # store a text here to display a notification to the user
+    answerAlert is number   # store 1 here to show answerText as an alert instead of a notification at the top of the chat screen
+procedure:
+    # I don't use this sub-procedure :)
+end sub
