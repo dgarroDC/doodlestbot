@@ -178,7 +178,7 @@ procedure:
     for each line in lines do
         split line by " " in words
         for each word in words do
-            get index of "https://www.doodlest.com/play/" from messageText in i
+            get index of "https://www.doodlest.com/play/" from word in i
             if i is equal to 0 then
                 call addGame with word chatId newGames
             end if
