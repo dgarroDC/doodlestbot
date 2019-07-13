@@ -1,23 +1,21 @@
 IMPORT "ltb/ltb.ldpl"
 IMPORT "token.ldpl"
 
-DATA:
-
-gamesFile is text
-
 PROCEDURE:
 
-store "games" in gamesFile
 tg bot init with token token
 
-# Get the current games in a list
+# Get the current games of a chat in a list
 sub getGamesList
 parameters:
     gamesList is text list
+    chatId is number
 local data:
+    gamesFile is text
     games is text
 procedure:
     clear gamesList
+    in gamesFile join "games/" chatId
     load file gamesFile in games
     if errorcode is equal to 0 then
         split games by crlf in gamesList
@@ -25,10 +23,11 @@ procedure:
     end if
 end sub
 
-# Adds a game to the games list by play URL, increments new games counter
+# Adds a game to the chat's games list by play URL, increments new games counter
 sub addGame
 parameters:
     gameURL is text
+    chatId is number
     newGames is number
 local data:
     id is text
@@ -36,6 +35,7 @@ local data:
     j is number
     gamesList is text list
     game is text
+    gamesFile is text
 procedure:
     store length of "https://www.doodlest.com/play/" in i
     store length of gameURL in j
@@ -46,7 +46,7 @@ procedure:
         return # id is not a number (or it's 0, lets hope it's not a valid id)
     end if
 
-    call getGamesList with gamesList
+    call getGamesList with gamesList chatId
     for each game in gamesList do
         if game is equal to id then
             return # repeated game
@@ -55,6 +55,7 @@ procedure:
 
     incr newGames
     in id join id crlf
+    in gamesFile join "games/" chatId
     append id to file gamesFile
 end sub
 
@@ -71,8 +72,9 @@ local data:
     title is text
     response is text
     length is number
+    gamesFile is text
 procedure:
-    call getGamesList with gamesList
+    call getGamesList with gamesList chatId
     store length of gamesList in length
     if length is equal to 0 then
         in response join "😱 No games in progress, create one now:" crlf "https://www.doodlest.com/create/"
@@ -121,6 +123,7 @@ procedure:
     repeat
 
     # Update games file
+    in gamesFile join "games/" chatId
     write games to file gamesFile
 end sub
 
@@ -177,7 +180,7 @@ procedure:
         for each word in words do
             get index of "https://www.doodlest.com/play/" from messageText in i
             if i is equal to 0 then
-                call addGame with word newGames
+                call addGame with word chatId newGames
             end if
         repeat
     repeat
