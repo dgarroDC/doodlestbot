@@ -10,34 +10,52 @@ PROCEDURE:
 store "games" in gamesFile
 tg bot init with token token
 
-# /adgame command
+# Get the current games in a list
+sub getGamesList
+parameters:
+    gamesList is text list
+local data:
+    games is text
+procedure:
+    clear gamesList
+    load file gamesFile in games
+    if errorcode is equal to 0 then
+        split games by crlf in gamesList
+        delete last element of gamesList # File ends in newline, ignore last ""
+    end if
+end sub
+
+# Adds a game to the games list by play URL, increments new games counter
 sub addGame
 parameters:
     gameURL is text
-    chatId is number
+    newGames is number
 local data:
-    response is text
+    id is text
     i is number
     j is number
+    gamesList is text list
+    game is text
 procedure:
-    if gameURL is equal to "" then
-        return
-    end if
-    get index of "https://www.doodlest.com/play/" from gameURL in i
-    if i is not equal to 0 then
-        in response join "⚠ Invalid Doodlest play URL: " crlf gameURL crlf
-        tg bot send message response to chatId
-        return
-    end if
     store length of "https://www.doodlest.com/play/" in i
     store length of gameURL in j
     in j solve j - i
-    substring gameURL from i length j in response
-    in response join response crlf
-    append response to file gamesFile
+    substring gameURL from i length j in id
+    store id in i
+    if i is equal to 0 then
+        return # id is not a number (or it's 0, lets hope it's not a valid id)
+    end if
 
-    # in response join "💥 New Doodlest game!" crlf gameURL
-    # tg bot send message response to chatId
+    call getGamesList with gamesList
+    for each game in gamesList do
+        if game is equal to id then
+            return # repeated game
+        end if
+    repeat
+
+    incr newGames
+    in id join id crlf
+    append id to file gamesFile
 end sub
 
 # /games command
@@ -54,13 +72,7 @@ local data:
     response is text
     length is number
 procedure:
-    load file gamesFile in games
-    if errorcode is equal to 1 then
-        store "" in games
-    end if
-    split games by crlf in gamesList
-    store "" in games
-    delete last element of gamesList # File ends in newline, ignore last ""
+    call getGamesList with gamesList
     store length of gamesList in length
     if length is equal to 0 then
         in response join "😱 No games in progress, create one now:" crlf "https://www.doodlest.com/create/"
@@ -130,35 +142,6 @@ procedure:
     substring ltb.curl.out.response from i length j in title
 end sub
 
-# Tests if the messageText uses a command and returns arguments
-sub testCommand
-parameters:
-    messageText is text
-    command is text
-    arguments is text
-    usesCommand is number
-local data:
-    i is number
-    j is number
-procedure:
-    get index of command from messageText in i
-    if i is equal to 0 then
-        store length of messageText in i
-        get index of " " from messageText in j
-        if j is equal to -1 then
-            store "" in arguments
-        else
-            in i solve i - j
-            substring messageText from j length i in arguments
-            trim arguments in arguments
-        end if
-        store 1 in usesCommand
-    else
-        store 0 in usesCommand
-    end if
-end sub
-
-
 # This sub-procedure is called each time a new text message arrives.
 # Captions in animation, audio, document, photo, video or voice are captured too.
 sub ltb.onMessage
@@ -169,17 +152,36 @@ parameters:
     messageText is text     # content of the message
 local data:
     i is number
-    arguments is text
+    lines is text list
+    words is text list
+    line is text
+    word is text
+    newGames is number
+    response is text
 procedure:
-    call testCommand with messageText "/addgame" arguments i
-    if i is equal to 1 then
-        call addGame with arguments chatId
-        return
-    end if
-    call testCommand with messageText "/games" arguments i
-    if i is equal to 1 then
+    get index of "/games" from messageText in i
+    if i is equal to 0 then
         call displayGames with chatId
         return
+    end if
+
+    split messageText by "\\n" in lines
+    for each line in lines do
+        split line by " " in words
+        for each word in words do
+            get index of "https://www.doodlest.com/play/" from messageText in i
+            if i is equal to 0 then
+                call addGame with word newGames
+            end if
+        repeat
+    repeat
+    if newGames is greater than 0 then
+        if newGames is equal to 1 then
+            in response join "💥 New Doodlest game added!" crlf
+        else
+            in response join "💥 " newGames " new Doodlest games added!" crlf
+        end if
+        tg bot send message response to chatId
     end if
 end sub
 
