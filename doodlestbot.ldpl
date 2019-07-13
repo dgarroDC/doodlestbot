@@ -76,7 +76,10 @@ procedure:
     store length of gamesList in length
     if length is equal to 0 then
         in response join "😱 No games in progress, create one now:" crlf "https://www.doodlest.com/create/"
-        tg bot send message response to chatId
+        store 1 in errorcode
+        while errorcode is equal to 1 do
+            tg bot send message response to chatId
+        repeat
         return
     end if
 
@@ -112,7 +115,10 @@ procedure:
         repeat
     end if
 
-    tg bot send message response to chatId
+    store 1 in errorcode
+    while errorcode is equal to 1 do
+        tg bot send message response to chatId
+    repeat
 
     # Update games file
     write games to file gamesFile
@@ -181,7 +187,10 @@ procedure:
         else
             in response join "💥 " newGames " new Doodlest games added!" crlf
         end if
-        tg bot send message response to chatId
+        store 1 in errorcode
+        while errorcode is equal to 1 do
+            tg bot send message response to chatId
+        repeat
     end if
 end sub
 
