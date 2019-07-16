@@ -64,12 +64,18 @@ sub displayGames
 parameters:
     chatId is number
 local data:
+    i is number
     games is text
     gamesList is text list
     game is text
     endedGames is text list
     currentGames is text list
-    title is text
+    totalPlayers is number
+    playedPlayers is number
+    remainingPlayers is number
+    totalPlayersL is number list
+    playedPlayersL is number list
+    # title is text
     response is text
     length is number
     gamesFile is text
@@ -87,11 +93,13 @@ procedure:
 
     # Classify games
     for each game in gamesList do
-        call galleryTitle with game title
-        if title is not equal to "" then
+        call gameStatus with game totalPlayers playedPlayers remainingPlayers
+        if remainingPlayers is equal to 0 then
             push game to endedGames
-        else
+        else if remainingPlayers is greater than 0 then
             push game to currentGames
+            push totalPlayers to totalPlayersL
+            push playedPlayers to playedPlayersL
         end if
     repeat
 
@@ -111,9 +119,9 @@ procedure:
             in response join response crlf crlf # New line after ended games
         end if
         in response join response "✏️ Games in progress:"
-        for each game in currentGames do
-            in response join response crlf "https://www.doodlest.com/play/" game
-            in games join games game crlf
+        for i from 0 to length step 1 do
+            in response join response crlf "[" playedPlayersL:i "/" totalPlayersL:i "] " "https://www.doodlest.com/play/" currentGames:i
+            in games join games currentGames:i crlf
         repeat
     end if
 
@@ -125,6 +133,35 @@ procedure:
     # Update games file
     in gamesFile join "games/" chatId
     write games to file gamesFile
+end sub
+
+# Returns the game's number of players (total, played, remaining), or -1 total if invalid game
+sub gameStatus
+parameters:
+    id is text
+    total is number
+    played is number
+    remaining is number
+local data:
+    length is number
+    splitted is text list
+procedure:
+    join "https://www.doodlest.com/include/gamesleft.php?id=" and id in ltb.curl.in.url
+    clear ltb.curl.in.argNames
+    clear ltb.curl.in.argValues
+    store 1 in errorcode
+    while errorcode is equal to 1 do
+        call external ltb.curl.request
+    repeat
+    split ltb.curl.out.response by " " in splitted
+    store length of splitted in length
+    if length is equal to 3 then
+        store splitted:0 in total
+        store splitted:1 in played
+        store splitted:2 in remaining
+    else
+        store -1 in total
+    end if
 end sub
 
 # Returns the gallery's title of the given id (or "" if unfinished)
