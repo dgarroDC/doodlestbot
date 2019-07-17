@@ -75,7 +75,6 @@ local data:
     remainingPlayers is number
     totalPlayersL is number list
     playedPlayersL is number list
-    title is text
     response is text
     length is number
     gamesFile is text
@@ -108,8 +107,7 @@ procedure:
     if length is greater than 0 then
         store "🖼️ New #CompletedGames:" in response
         for each game in endedGames do
-            call galleryTitle with game title
-            in response join response crlf "- [" title "](https://www.doodlest.com/gallery/" game ")"
+            in response join response crlf "https://www.doodlest.com/gallery/" game
         repeat
     end if
 
@@ -121,14 +119,13 @@ procedure:
         end if
         in response join response "✏️ Games in progress:"
         for i from 0 to length step 1 do
-            in response join response crlf "\\[" playedPlayersL:i "/" totalPlayersL:i "] " "https://www.doodlest.com/play/" currentGames:i
+            in response join response crlf "[" playedPlayersL:i "/" totalPlayersL:i "] " "https://www.doodlest.com/play/" currentGames:i
             in games join games currentGames:i crlf
         repeat
     end if
 
     store 1 in errorcode
     while errorcode is equal to 1 do
-        store "Markdown" in ltb.send.options:"format"
         tg bot send message response to chatId
     repeat
 
@@ -164,29 +161,6 @@ procedure:
     else
         store -1 in total
     end if
-end sub
-
-# Returns the gallery's title of the given id
-sub galleryTitle
-parameters:
-    id is text
-    title is text
-local data:
-    i is number
-    j is number
-procedure:
-    join "https://www.doodlest.com/gallery/" and id in ltb.curl.in.url
-    clear ltb.curl.in.argNames
-    clear ltb.curl.in.argValues
-    store 1 in errorcode
-    while errorcode is equal to 1 do
-        call external ltb.curl.request
-    repeat
-    get index of "<title>" from ltb.curl.out.response in i
-    in i solve i + 7
-    get index of " - Doodlest</title>" from ltb.curl.out.response in j
-    in j solve j - i
-    substring ltb.curl.out.response from i length j in title
 end sub
 
 # This sub-procedure is called each time a new text message arrives.
