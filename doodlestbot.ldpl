@@ -79,6 +79,7 @@ local data:
     response is text
     length is number
     gamesFile is text
+    keyboard is text
 procedure:
     call getGamesList with gamesList chatId
     store length of gamesList in length
@@ -147,9 +148,13 @@ procedure:
         repeat
     end if
 
+    # Random public game button
+    tg bot create inline keyboard in keyboard
+    tg bot add button with text "🎲 Random public game" and url "https://www.doodlest.com/waitgame" to inline keyboard keyboard
+
     store 1 in errorcode
     while errorcode is equal to 1 do
-        tg bot send message response to chatId
+        tg bot send message response to chatId with inline keyboard keyboard
     repeat
 
     # Update games file
