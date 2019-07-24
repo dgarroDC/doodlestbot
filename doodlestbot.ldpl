@@ -81,6 +81,8 @@ local data:
     gamesFile is text
     keyboard is text
 procedure:
+    store 1 in ltb.send.options:"disable_preview"
+
     call getGamesList with gamesList chatId
     store length of gamesList in length
     if length is equal to 0 then
