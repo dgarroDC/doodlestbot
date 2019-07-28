@@ -1,5 +1,5 @@
-IMPORT "ltb/ltb.ldpl"
-IMPORT "token.ldpl"
+INCLUDE "ltb/ltb.ldpl"
+INCLUDE "token.ldpl"
 
 PROCEDURE:
 
@@ -37,8 +37,8 @@ local data:
     game is text
     gamesFile is text
 procedure:
-    store length of "https://www.doodlest.com/play/" in i
-    store length of gameURL in j
+    get length of "https://www.doodlest.com/play/" in i
+    get length of gameURL in j
     in j solve j - i
     substring gameURL from i length j in id
     store id in i
@@ -53,7 +53,7 @@ procedure:
         end if
     repeat
 
-    incr newGames
+    in newGames solve newGames + 1
     in id join id crlf
     in gamesFile join "games/" chatId
     append id to file gamesFile
@@ -84,7 +84,7 @@ procedure:
     store 1 in ltb.send.options:"disable_preview"
 
     call getGamesList with gamesList chatId
-    store length of gamesList in length
+    get length of gamesList in length
     if length is equal to 0 then
         in response join "😱 No games in progress, create one now:" crlf "https://www.doodlest.com/create/"
         store 1 in errorcode
@@ -99,8 +99,8 @@ procedure:
     for each game in gamesList do
         in ltb.curl.in.url join ltb.curl.in.url game ","
     repeat
-    store length of ltb.curl.in.url in length
-    decr length
+    get length of ltb.curl.in.url in length
+    in length solve length - 1
     substring ltb.curl.in.url from 0 length length in ltb.curl.in.url # Delete last ',' (just in case)
     clear ltb.curl.in.argNames
     clear ltb.curl.in.argValues
@@ -114,11 +114,11 @@ procedure:
     store 0 in i
     for each game in gamesList do
         store gamesPlayers:i in totalPlayers
-        incr i
+        in i solve i + 1
         store gamesPlayers:i in playedPlayers
-        incr i
+        in i solve i + 1
         store gamesPlayers:i in remainingPlayers
-        incr i
+        in i solve i + 1
         if remainingPlayers is equal to 0 then
             push game to endedGames
         else if remainingPlayers is greater than 0 then
@@ -129,7 +129,7 @@ procedure:
     repeat
 
     # Display completed games
-    store length of endedGames in length
+    get length of endedGames in length
     if length is greater than 0 then
         store "🖼️ New #CompletedGames:" in response
         for each game in endedGames do
@@ -138,7 +138,7 @@ procedure:
     end if
 
     # Display games in progress
-    store length of currentGames in length
+    get length of currentGames in length
     if length is greater than 0 then
         if response is not equal to "" then
             in response join response crlf crlf # New line after ended games
